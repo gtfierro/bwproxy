@@ -1,0 +1,11 @@
+{
+    "Subscribe": {
+        "Allowed": true
+    },
+    "Publish": {
+        "Allowed": false
+    },
+    "Query": {
+        "Allowed": true
+    }
+}
