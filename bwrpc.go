@@ -66,6 +66,12 @@ func doRPCCall(ctx context.Context, client *bw2.BW2Client, perms Permissions, pa
 			} else {
 				return result, errors.Errorf("Key has no permission to Query")
 			}
+		case PUBLISH:
+			if perms.Publish.Allowed {
+				return doPublish(ctx, client, perms, params)
+			} else {
+				return result, errors.Errorf("Key has no permission to Publish")
+			}
 		default:
 			return result, errors.Errorf("No method found matching %v", params.Proc)
 		}
@@ -77,6 +83,7 @@ func doQuery(ctx context.Context, client *bw2.BW2Client, perms Permissions, para
 
 	// params needed:
 	// - uri
+	// - ponum (opt)
 	uri := getString("uri", params.Params)
 	ponum := getString("ponum", params.Params)
 	msgs, err := client.Query(&bw2.QueryParams{
@@ -105,4 +112,29 @@ func doQuery(ctx context.Context, client *bw2.BW2Client, perms Permissions, para
 	}
 
 	return datums2json(results)
+}
+
+func doPublish(ctx context.Context, client *bw2.BW2Client, perms Permissions, params BWRPCCall) ([]byte, error) {
+	// params needed:
+	// - uri
+	// - ponum
+	// - contents
+	// - persist (defaults to false)
+	uri := getString("uri", params.Params)
+	ponum := getString("ponum", params.Params)
+	persist := getBool("persist", params.Params)
+	contents := params.Params["contents"]
+
+	po, err := iface2po(ponum, contents)
+	if err != nil {
+		return []byte{}, errors.Wrap(err, "Could not create PO from iface")
+	}
+
+	err = client.Publish(&bw2.PublishParams{
+		URI:            uri,
+		PayloadObjects: []bw2.PayloadObject{po},
+		Persist:        persist,
+	})
+
+	return []byte{}, err
 }

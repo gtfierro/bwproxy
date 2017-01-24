@@ -3,7 +3,7 @@
         "Allowed": true
     },
     "Publish": {
-        "Allowed": false
+        "Allowed": true
     },
     "Query": {
         "Allowed": true

@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	bw2 "gopkg.in/immesys/bw2bind.v5"
@@ -22,6 +24,34 @@ func getString(key string, m map[string]interface{}) string {
 	return ""
 }
 
+func getBool(key string, m map[string]interface{}) bool {
+	if val_if, found := m[key]; found {
+		b, err := strconv.ParseBool(toString(val_if))
+		if err != nil {
+			return false
+		}
+		return b
+	}
+	return false
+}
+
+func isType(po, df string) bool {
+	parts := strings.SplitN(df, "/", 2)
+	var mask int
+	var err error
+	if len(parts) != 2 {
+		mask = 32
+	} else {
+		mask, err = strconv.Atoi(parts[1])
+		if err != nil {
+			panic("malformed masked dot form")
+		}
+	}
+	ponum := bw2.FromDotForm(parts[0])
+	mypo := bw2.FromDotForm(po)
+	return (ponum >> uint(32-mask)) == (mypo >> uint(32-mask))
+}
+
 func po2iface(po bw2.PayloadObject) (interface{}, error) {
 
 	if po.IsTypeDF(bw2.PODFMaskMsgPack) {
@@ -38,6 +68,15 @@ func po2iface(po bw2.PayloadObject) (interface{}, error) {
 	}
 
 	return []byte{}, errors.New("Cannot unmarshal")
+}
+
+func iface2po(ponum string, v interface{}) (bw2.PayloadObject, error) {
+	if isType(ponum, bw2.PODFMaskMsgPack) {
+		return bw2.CreateMsgPackPayloadObject(bw2.FromDotForm(ponum), v)
+	} else if isType(ponum, bw2.PODFMaskText) {
+		return bw2.CreateTextPayloadObject(bw2.FromDotForm(ponum), toString(v)), nil
+	}
+	return nil, nil
 }
 
 func datums2json(datums []interface{}) ([]byte, error) {
