@@ -62,7 +62,7 @@ func doRPCCall(ctx context.Context, client *bw2.BW2Client, perms Permissions, pa
 		switch params.Proc {
 		case QUERY:
 			if perms.Query.Allowed {
-				return doQuery(client, perms, params)
+				return doQuery(ctx, client, perms, params)
 			} else {
 				return result, errors.Errorf("Key has no permission to Query")
 			}
@@ -72,7 +72,7 @@ func doRPCCall(ctx context.Context, client *bw2.BW2Client, perms Permissions, pa
 	}
 }
 
-func doQuery(client *bw2.BW2Client, perms Permissions, params BWRPCCall) ([]byte, error) {
+func doQuery(ctx context.Context, client *bw2.BW2Client, perms Permissions, params BWRPCCall) ([]byte, error) {
 	var results []interface{}
 
 	// params needed:
@@ -87,6 +87,11 @@ func doQuery(client *bw2.BW2Client, perms Permissions, params BWRPCCall) ([]byte
 	}
 
 	for msg := range msgs {
+		select {
+		case <-ctx.Done():
+			return []byte{}, ctx.Err()
+		default:
+		}
 		for _, po := range msg.POs {
 			if ponum != "" && !po.IsTypeDF(ponum) {
 				continue
