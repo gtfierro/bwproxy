@@ -81,13 +81,25 @@ func iface2po(ponum string, v interface{}) (bw2.PayloadObject, error) {
 
 func datums2json(datums []interface{}) ([]byte, error) {
 	for idx, datum := range datums {
-		if m, ok := datum.(map[interface{}]interface{}); ok {
-			new_m := make(map[string]interface{})
-			for k, v := range m {
-				new_m[toString(k)] = v
-			}
-			datums[idx] = new_m
-		}
+		datums[idx] = fixmap(datum)
 	}
 	return json.Marshal(datums)
+}
+
+func fixmap(datum interface{}) interface{} {
+	if m, ok := datum.(map[interface{}]interface{}); ok {
+		new_m := make(map[string]interface{})
+		for k, v := range m {
+			new_v := fixmap(v)
+			new_m[toString(k)] = new_v
+		}
+		return new_m
+	} else if a, ok := datum.([]interface{}); ok {
+		for idx, l := range a {
+			a[idx] = fixmap(l)
+		}
+		return a
+	} else {
+		return datum
+	}
 }

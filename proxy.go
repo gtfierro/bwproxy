@@ -20,18 +20,22 @@ type proxyServer struct {
 func startProxyServer(cfg *Config) {
 	server := &proxyServer{
 		port:       cfg.Port,
-		staticpath: cfg.StaticPath,
+		staticpath: cfg.StaticPath + "/static",
 	}
 	server.router = httprouter.New()
 
 	registryPath := cfg.StaticPath + "/.registry.db"
 	server.registry = newRegistry(registryPath, cfg.BOSSWAVEAgent)
 
+	server.router.ServeFiles("/static/*filepath", http.Dir(server.staticpath))
+
 	server.router.POST("/streaming", server.doStreamingCall)
 	server.router.POST("/call", server.doCall)
-	//r.ServeFiles("/static/*filepath", http.Dir(cfg.StaticPath+"/static"))
+
+	server.router.GET("/", server.phoneHome)
 	// TODO: think about how to "install" apps. Do we just place the source in a known folder?
 	// TODO: need a way to "isolate" apps: chroot? https://github.com/adtac/fssb? Docker?
+	// TODO: need a way to prevent apps from calling "across" each other
 
 	// configure server
 	var (
@@ -102,6 +106,8 @@ func (srv *proxyServer) doCall(rw http.ResponseWriter, req *http.Request, ps htt
 	ctx, cancel := context.WithTimeout(req.Context(), 10*time.Second)
 	defer cancel()
 
+	rw.Header().Set("Content-Type", "application/json")
+
 	defer req.Body.Close()
 	dec := json.NewDecoder(req.Body)
 
@@ -152,4 +158,10 @@ func (srv *proxyServer) doCall(rw http.ResponseWriter, req *http.Request, ps htt
 
 	rw.Write(results)
 	return
+}
+
+func (srv *proxyServer) phoneHome(rw http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	defer req.Body.Close()
+	log.Notice("Serving", srv.staticpath+"/home.html", "to", req.RemoteAddr)
+	http.ServeFile(rw, req, srv.staticpath+"/home.html")
 }
