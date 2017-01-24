@@ -61,17 +61,15 @@ func doRPCCall(ctx context.Context, client *bw2.BW2Client, perms Permissions, pa
 	default:
 		switch params.Proc {
 		case QUERY:
-			if perms.Query.Allowed {
-				return doQuery(ctx, client, perms, params)
-			} else {
+			if !checkQueryPermissions(perms, params) {
 				return result, errors.Errorf("Key has no permission to Query")
 			}
+			return doQuery(ctx, client, perms, params)
 		case PUBLISH:
-			if perms.Publish.Allowed {
-				return doPublish(ctx, client, perms, params)
-			} else {
+			if !checkPublishPermissions(perms, params) {
 				return result, errors.Errorf("Key has no permission to Publish")
 			}
+			return doPublish(ctx, client, perms, params)
 		default:
 			return result, errors.Errorf("No method found matching %v", params.Proc)
 		}

@@ -20,3 +20,16 @@ type PublishPermission struct {
 type QueryPermission struct {
 	Allowed bool
 }
+
+// returns true if OK, else false
+func checkQueryPermissions(perms Permissions, params BWRPCCall) bool {
+	return perms.Query.Allowed
+}
+
+func checkSubscribePermissions(perms Permissions, params BWRPCCall) bool {
+	return perms.Subscribe.Allowed
+}
+
+func checkPublishPermissions(perms Permissions, params BWRPCCall) bool {
+	return perms.Publish.Allowed
+}
