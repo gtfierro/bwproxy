@@ -64,19 +64,44 @@ func doRPCCall(ctx context.Context, client *bw2.BW2Client, perms Permissions, pa
 			if !checkQueryPermissions(perms, params) {
 				return result, errors.Errorf("Key has no permission to Query")
 			}
-			return doQuery(ctx, client, perms, params)
+			return doQuery(ctx, client, params)
 		case PUBLISH:
 			if !checkPublishPermissions(perms, params) {
 				return result, errors.Errorf("Key has no permission to Publish")
 			}
-			return doPublish(ctx, client, perms, params)
+			return doPublish(ctx, client, params)
 		default:
 			return result, errors.Errorf("No method found matching %v", params.Proc)
 		}
 	}
 }
 
-func doQuery(ctx context.Context, client *bw2.BW2Client, perms Permissions, params BWRPCCall) ([]byte, error) {
+// runs the RPC call and returns a channel of JSON-serialized structures
+func doRPCStream(ctx context.Context, client *bw2.BW2Client, perms Permissions, params BWRPCCall) (chan []byte, chan error) {
+	var responses = make(chan []byte)
+	var errors = make(chan error, 1)
+	go func() {
+		select {
+		case <-ctx.Done():
+			close(responses)
+			errors <- ctx.Err()
+			return
+		default:
+			switch params.Proc {
+			case SUBSCRIBE:
+				if !checkSubscribePermissions(perms, params) {
+					close(responses)
+					return
+				}
+				doSubscribe(ctx, responses, errors, client, params)
+			}
+		}
+	}()
+
+	return responses, errors
+}
+
+func doQuery(ctx context.Context, client *bw2.BW2Client, params BWRPCCall) ([]byte, error) {
 	var results []interface{}
 
 	// params needed:
@@ -112,7 +137,7 @@ func doQuery(ctx context.Context, client *bw2.BW2Client, perms Permissions, para
 	return datums2json(results)
 }
 
-func doPublish(ctx context.Context, client *bw2.BW2Client, perms Permissions, params BWRPCCall) ([]byte, error) {
+func doPublish(ctx context.Context, client *bw2.BW2Client, params BWRPCCall) ([]byte, error) {
 	// params needed:
 	// - uri
 	// - ponum
@@ -135,4 +160,47 @@ func doPublish(ctx context.Context, client *bw2.BW2Client, perms Permissions, pa
 	})
 
 	return []byte{}, err
+}
+
+func doSubscribe(ctx context.Context, responses chan []byte, errchan chan error, client *bw2.BW2Client, params BWRPCCall) {
+	// params needed
+	// - uri
+	// - ponum (opt)
+	uri := getString("uri", params.Params)
+	ponum := getString("ponum", params.Params)
+
+	c, err := client.Subscribe(&bw2.SubscribeParams{
+		URI: uri,
+	})
+	log.Debug("START SUBSCRIBE", uri)
+	if err != nil {
+		errchan <- errors.Wrap(err, "Could not subscribe")
+		return
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			close(c)
+			errchan <- ctx.Err()
+			return
+		case msg := <-c:
+			msg.Dump()
+			for _, po := range msg.POs {
+				if ponum != "" && !po.IsTypeDF(ponum) {
+					continue
+				}
+				datum, err := po2iface(po)
+				if err != nil {
+					errchan <- errors.Wrap(err, "Could not retrieve iface from PO")
+				}
+
+				if res, err := datum2json(datum); err != nil {
+					errchan <- errors.Wrap(err, "Could not marshal json")
+				} else {
+					responses <- res
+				}
+			}
+		}
+	}
 }

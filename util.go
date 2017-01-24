@@ -86,6 +86,10 @@ func datums2json(datums []interface{}) ([]byte, error) {
 	return json.Marshal(datums)
 }
 
+func datum2json(datum interface{}) ([]byte, error) {
+	return json.Marshal(fixmap(datum))
+}
+
 func fixmap(datum interface{}) interface{} {
 	if m, ok := datum.(map[interface{}]interface{}); ok {
 		new_m := make(map[string]interface{})
