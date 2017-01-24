@@ -21,18 +21,35 @@
             <form class="col s12" name="query">
                 <div class="row">
                     <div class="input-field col s6">
-                      <input placeholder="e.g. ucberkeley/soda/eecs/*" id="uri" type="text">
-                      <label for="uri">Query URI</label>
+                      <input placeholder="e.g. scratch.ns/*" id="query_uri" type="text">
+                      <label for="query_uri">Query URI</label>
                     </div>
                     <div class="input-field col s2">
-                      <input placeholder="" id="ponum" type="text">
-                      <label for="ponum">PO num (opt)</label>
+                      <input placeholder="" id="query_ponum" type="text">
+                      <label for="query_ponum">PO num (opt)</label>
                     </div>
                 </div>
                 <button id="querysubmit" class="btn waves-effect waves-light" type="submit" name="action">Query</button>
             </form>
             <div class="col s12" id="querytableresults">
             </div>
+        </div>
+
+        <div class="row">
+            <h3 class="align-center">Subscribe</h3>
+            <form class="col s12" name="subscribe">
+                <div class="row">
+                    <div class="input-field col s6">
+                      <input placeholder="e.g. scratch.ns/*" id="subscribe_uri" type="text">
+                      <label for="subscribe_uri">Subscribe URI</label>
+                    </div>
+                    <div class="input-field col s2">
+                      <input placeholder="" id="subscribe_ponum" type="text">
+                      <label for="subscribe_ponum">PO num (opt)</label>
+                    </div>
+                </div>
+                <button id="subscribesubmit" class="btn waves-effect waves-light" type="submit" name="action">Subscribe (console)</button>
+            </form>
         </div>
     </div>
 
@@ -41,8 +58,8 @@
 
         $("#querysubmit").click(function(e) {
             var params = {
-                uri: $("#uri").val(),
-                ponum: $("#ponum").val(),
+                uri: $("#query_uri").val(),
+                ponum: $("#query_ponum").val(),
             };
             $("#querytableresults").hide();
             client.query(params,
@@ -58,6 +75,22 @@
                   }
                   $("#querytableresults").html(html);
                   $("#querytableresults").show();
+                  console.log(data);
+              },
+              function(a) {
+                  console.log(a);
+              }
+            );
+            e.preventDefault();
+        })
+
+        $("#subscribesubmit").click(function(e) {
+            var params = {
+                uri: $("#subscribe_uri").val(),
+                ponum: $("#subscribe_ponum").val(),
+            };
+            client.subscribe(params,
+              function(data) {
                   console.log(data);
               },
               function(a) {

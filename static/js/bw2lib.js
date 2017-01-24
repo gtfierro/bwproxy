@@ -1,7 +1,7 @@
 var bw2lib = (function () {
     var Client = function(key) {
         this.key = key;
-        this._callbacks = {};
+        this._subscriptions = {};
     };
 
     Client.prototype.query = function(params, success, failure) {
@@ -33,6 +33,25 @@ var bw2lib = (function () {
             .fail(function(err) {
                 failure(err);
             });
+    };
+
+    Client.prototype.subscribe = function(params, success, failure) {
+        var ws = new WebSocket("ws://"+window.location.host+"/streaming");
+        var params = {
+            key: this.key,
+            proc: "subscribe",
+            params: params
+        };
+        ws.onmessage = function(e) {
+            success(JSON.parse(e.data));
+        }
+        ws.onerror = function(e) {
+            failure(e.data)
+        }
+        ws.onopen = function(e) {
+            console.log("OPEN")
+        ws.send(JSON.stringify(params));
+        }
     };
 
     return {
