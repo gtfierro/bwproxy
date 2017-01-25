@@ -16,14 +16,17 @@ var upgrader = websocket.Upgrader{} // default
 type proxyServer struct {
 	port       string
 	staticpath string
-	router     *httprouter.Router
-	registry   *registry
+	// path where applications will be installed
+	apppath  string
+	router   *httprouter.Router
+	registry *registry
 }
 
 func startProxyServer(cfg *Config) {
 	server := &proxyServer{
 		port:       cfg.Port,
 		staticpath: cfg.StaticPath + "/static",
+		apppath:    cfg.AppPath,
 	}
 	server.router = httprouter.New()
 

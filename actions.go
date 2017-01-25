@@ -17,6 +17,7 @@ func doRegister(c *cli.Context) error {
 		Port:          "2222",
 		ListenAddress: "127.0.0.1",
 		StaticPath:    "/home/gabe/src/bwproxy",
+		AppPath:       "/home/gabe/src/bwproxy/apps",
 		BOSSWAVEAgent: "",
 		UseIPv6:       false,
 	}
@@ -76,6 +77,7 @@ func runProxy(c *cli.Context) error {
 		Port:          "2222",
 		ListenAddress: "127.0.0.1",
 		StaticPath:    "/home/gabe/src/bwproxy",
+		AppPath:       "/home/gabe/src/bwproxy/apps",
 		BOSSWAVEAgent: "",
 		UseIPv6:       false,
 	}
