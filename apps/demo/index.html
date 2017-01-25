@@ -1,0 +1,104 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="bw2lib.js"></script>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Import materialize.css-->
+    <link type="text/css" rel="stylesheet" href="static/css/materialize.min.css"  media="screen,projection"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link type="text/css" rel="stylesheet" href="static/css/site.css" />
+    <title>BOSSWAVE Proxy</title>
+  </head>
+  <body>
+    <!--Import jQuery before materialize.js-->
+    <script type="text/javascript" src="static/js/jquery-2.1.1.min.js"></script>
+    <script type="text/javascript" src="static/js/materialize.min.js"></script>
+    <div class="container">
+        <h1 class="align-center">BOSSWAVE Proxy Test</h1>
+        <div class="row">
+            <h3 class="align-center">Query</h3>
+            <form class="col s12" name="query">
+                <div class="row">
+                    <div class="input-field col s6">
+                      <input placeholder="e.g. scratch.ns/*" id="query_uri" type="text">
+                      <label for="query_uri">Query URI</label>
+                    </div>
+                    <div class="input-field col s2">
+                      <input placeholder="" id="query_ponum" type="text">
+                      <label for="query_ponum">PO num (opt)</label>
+                    </div>
+                </div>
+                <button id="querysubmit" class="btn waves-effect waves-light" type="submit" name="action">Query</button>
+            </form>
+            <div class="col s12" id="querytableresults">
+            </div>
+        </div>
+
+        <div class="row">
+            <h3 class="align-center">Subscribe</h3>
+            <form class="col s12" name="subscribe">
+                <div class="row">
+                    <div class="input-field col s6">
+                      <input placeholder="e.g. scratch.ns/*" id="subscribe_uri" type="text">
+                      <label for="subscribe_uri">Subscribe URI</label>
+                    </div>
+                    <div class="input-field col s2">
+                      <input placeholder="" id="subscribe_ponum" type="text">
+                      <label for="subscribe_ponum">PO num (opt)</label>
+                    </div>
+                </div>
+                <button id="subscribesubmit" class="btn waves-effect waves-light" type="submit" name="action">Subscribe (console)</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        var client = new bw2lib.Client("a47b40d50157f0f1c0b775de34305936987b3f4a223f528b1ce04b8478357c83");
+
+        $("#querysubmit").click(function(e) {
+            var params = {
+                uri: $("#query_uri").val(),
+                ponum: $("#query_ponum").val(),
+            };
+            $("#querytableresults").hide();
+            client.query(params,
+              function(data) {
+                  if (data == null) {
+                    html = "<p>No Data</p>";
+                  } else {
+                    html = '<ul class="collection">';
+                    data.forEach(function(element) {
+                      html += '<li class="collection-item">' + JSON.stringify(element) + "</li>";
+                    });
+                    html += "</ul>";
+                  }
+                  $("#querytableresults").html(html);
+                  $("#querytableresults").show();
+                  console.log(data);
+              },
+              function(a) {
+                  console.log(a);
+              }
+            );
+            e.preventDefault();
+        })
+
+        $("#subscribesubmit").click(function(e) {
+            var params = {
+                uri: $("#subscribe_uri").val(),
+                ponum: $("#subscribe_ponum").val(),
+            };
+            client.subscribe(params,
+              function(data) {
+                  console.log(data);
+              },
+              function(a) {
+                  console.log(a);
+              }
+            );
+            e.preventDefault();
+        })
+    </script>
+  </body>
+</html>

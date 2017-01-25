@@ -1,0 +1,31 @@
+body {
+    margin:40px auto;
+    line-height:1.6;
+    font-size:18px;
+    font-family: Inconsolata, monospace;
+    color:#444;
+    padding:0 10px;
+    font-weight: 400;
+    line-height: 24px;
+}
+h1,h2,h3 {
+    line-height:1.2;
+    color:#333;
+    text-align: left;
+}
+a {
+    text-decoration: none;
+}
+a:link {
+    color: black;
+}
+a:visited {
+    color: black;
+}
+a:active {
+    color: black;
+}
+a:hover {
+    color: blue;
+    border-bottom:1px dotted black;
+}
