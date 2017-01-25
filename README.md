@@ -14,11 +14,7 @@ We may actually want to do a set of more involved actions, including:
 Will want a client library that is loaded from the proxy server that gives you all the function/library calls you need.
 Then we can change the implementation behind it whenever we want.
 
-Implement library in JS; takes care of the "RPC" aspect of it. Don't really want to use JSON-RPC
-
 What's the implementation?
-- how to "call" functions that are bosswave api calls
-- how to limit what an app can do
 - localstorage api?
 - addon libraries for remote services e.g. archiver
 
@@ -35,37 +31,31 @@ What's the implementation?
     - take result, deserialize to interface{}, then serialize to json
     - send result back
 
-### Permissions:
-- you will register your entity w/ the trusted bwproxy; you will get back an API key with a set of permissions.
-- give this API key to the application (used in the JS library)
+### Registering/Onboarding
 
+Right now its a command-line tool, but that's not as nice to use
 
+- admin dashboard:
+    - use an internal API on a DIFFERENT server:
+        - avoids untrusted apps accessing admin privileges by using same-origin policy
+    - browse/install/uninstall apps
+    - other configuration
+- local DNS record:
+    - append to /etc/hosts, probably
+    - can we redirect the port? Or just get it to listen on port 80?
 
-## URI Endpoints
+### Installing Apps
 
-GET `/sub/<uri>`, `/subscribe/<uri>`:
-- delivers JSON messages of what's published on BOSSWAVE (websockets)
+- apps are JUST a bundle of html/js/css pages, plus a config file
+- config file is just JSON that the app loads:
+    - app loads the config by requesting it from the bw2proxy server
+- config contents:
+    - key to use
 
-GET `/query/<uri>`:
-- returns JSON doc of persisted message on the URI
+### Application Structure
 
-GET `/latest/<uri>`:
-- latest message published on this URI
-- application can 'request' a set of URIs to be subscribed to on the backend
-
-POST `/register`:
-- request backend subscriptions on the URI (list of URIs)
-- specify the entity, other params for operation
-- get back an API key?
-
-POST `/heartbeat/<api key>`:
-- keep backend subscriptions alive?
-
-POST `/pub/<uri>`, `/publish/<uri>`:
-- publish message on URI. Takes JSON, converts to msgpack or whatever
-
-## Implementation
-
-Go server to take advantage of bw2bind
-
-Need local database to store messages? We can probably just query the bw2 agent UNLESS it crashes/goes offline? Do we want to be independent of that?
+- index.html file
+- static files
+- manifest.json:
+    - descriptions about the application: name + description
+    - desired domain name? Need some local DNS for this
