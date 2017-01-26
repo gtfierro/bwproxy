@@ -1,4 +1,5 @@
 {
-    "Name": "Demo App",
-    "Description": "This is a simple application to demonstrate how this is done"
+    "Name": "demo",
+    "Description": "This is a simple application to demonstrate how this is done",
+    "Version": "1.0"
 }
