@@ -57,5 +57,5 @@ Right now its a command-line tool, but that's not as nice to use
 - index.html file
 - static files
 - manifest.json:
-    - descriptions about the application: name + description
+    - descriptions about the application: name + description, version
     - desired domain name? Need some local DNS for this
