@@ -330,14 +330,13 @@ func (srv *proxyServer) getFreePort(name string) string {
 	srv.portLock.Lock()
 	defer srv.portLock.Unlock()
 	var newport int
-portloop:
-	for newport = srv.portRangeStart; newport < srv.portRangeStart+100; newport++ {
+	for newport = srv.portRangeStart; newport-srv.portRangeStart < 100; newport++ {
 		for _, port := range srv.usedPorts {
 			if port == newport {
-				continue portloop
+				break
 			}
-			break
 		}
+		break
 	}
 	srv.usedPorts[name] = newport
 	log.Debug(newport, srv.portRangeStart)
