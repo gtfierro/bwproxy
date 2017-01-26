@@ -5,28 +5,49 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/julienschmidt/httprouter"
+	"github.com/pkg/errors"
 )
 
 var upgrader = websocket.Upgrader{} // default
+var badPathMatch = regexp.MustCompile("^(/|\\.)")
 
 type proxyServer struct {
-	port       string
-	staticpath string
+	port          string
+	useipv6       bool
+	listenaddress string
+	staticpath    string
 	// path where applications will be installed
-	apppath  string
+	apppath string
+
+	// app configuration
+	runningApps    map[string]*appServer
+	portRangeStart int
+	usedPorts      map[string]int
+	portLock       sync.Mutex
+
 	router   *httprouter.Router
 	registry *registry
 }
 
 func startProxyServer(cfg *Config) {
 	server := &proxyServer{
-		port:       cfg.Port,
-		staticpath: cfg.StaticPath + "/static",
-		apppath:    cfg.AppPath,
+		port:           cfg.Port,
+		useipv6:        cfg.UseIPv6,
+		listenaddress:  cfg.ListenAddress,
+		staticpath:     cfg.StaticPath + "/static",
+		apppath:        cfg.AppPath,
+		runningApps:    make(map[string]*appServer),
+		portRangeStart: cfg.PortRangeStart,
+		usedPorts:      make(map[string]int),
 	}
 	server.router = httprouter.New()
 
@@ -35,8 +56,13 @@ func startProxyServer(cfg *Config) {
 
 	server.router.ServeFiles("/static/*filepath", http.Dir(server.staticpath))
 
+	// BW2 API calls
 	server.router.GET("/streaming", server.doStreamingCall)
 	server.router.POST("/call", server.doCall)
+
+	// app browsing/managemenet
+	server.router.GET("/apps/list", server.listApps)
+	server.router.POST("/apps/start", server.startApp)
 
 	server.router.GET("/", server.phoneHome)
 	// TODO: think about how to "install" apps. Do we just place the source in a known folder?
@@ -213,4 +239,107 @@ func (srv *proxyServer) phoneHome(rw http.ResponseWriter, req *http.Request, ps 
 	defer req.Body.Close()
 	log.Notice("Serving", srv.staticpath+"/home.html", "to", req.RemoteAddr)
 	http.ServeFile(rw, req, srv.staticpath+"/home.html")
+}
+
+func (srv *proxyServer) listApps(rw http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	defer req.Body.Close()
+
+	var manifests []appManifest
+
+	// list apps
+	appManifests, _ := filepath.Glob(srv.apppath + "/*/manifest.json")
+	for _, manifestpath := range appManifests {
+		file, err := os.Open(manifestpath)
+		if err != nil {
+			log.Error(errors.Wrapf(err, "Could not load manifest %s", manifestpath))
+			rw.WriteHeader(500)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		var manifest appManifest
+		if err := json.NewDecoder(file).Decode(&manifest); err != nil {
+			log.Error(errors.Wrapf(err, "Could not decode manifest %s", manifestpath))
+			rw.WriteHeader(500)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		manifests = append(manifests, manifest)
+	}
+
+	err := json.NewEncoder(rw).Encode(manifests)
+	if err != nil {
+		log.Error(errors.Wrap(err, "Could not write manifest response"))
+		rw.WriteHeader(500)
+		rw.Write([]byte(err.Error()))
+		return
+	}
+	return
+}
+
+func (srv *proxyServer) startApp(rw http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	defer req.Body.Close()
+
+	var appname string
+	err := json.NewDecoder(req.Body).Decode(&appname)
+	if err != nil {
+		err = errors.Wrap(err, "Could not decode appname")
+		log.Error(err)
+		rw.WriteHeader(500)
+		rw.Write([]byte(err.Error()))
+		return
+	}
+	if appname == "" || badPathMatch.MatchString(appname) {
+		err := "Could not open app with invalid name " + appname
+		log.Error(err)
+		rw.WriteHeader(500)
+		rw.Write([]byte(err))
+		return
+	}
+	file, err := os.Open(srv.apppath + "/" + appname + "/manifest.json")
+	if err != nil {
+		err = errors.Wrapf(err, "Could not open manifest for app %s", appname)
+		log.Error(err)
+		rw.WriteHeader(500)
+		rw.Write([]byte(err.Error()))
+		return
+	}
+	var manifest appManifest
+	if err := json.NewDecoder(file).Decode(&manifest); err != nil {
+		log.Error(errors.Wrapf(err, "Could not decode manifest %s", srv.apppath+"/"+appname+"/manifest.json"))
+		rw.WriteHeader(500)
+		rw.Write([]byte(err.Error()))
+		return
+	}
+
+	cfg := &appConfig{
+		port:          srv.getFreePort(manifest.Name),
+		useipv6:       srv.useipv6,
+		listenaddress: srv.listenaddress,
+		root:          srv.apppath + "/" + appname,
+		proxy:         srv,
+	}
+	log.Notice("Starting", manifest, "on", cfg.port)
+	log.Noticef("%+v", cfg)
+	app := startAppServer(cfg)
+	srv.runningApps[appname] = app
+	return
+}
+
+// gets an open port number for the given application
+func (srv *proxyServer) getFreePort(name string) string {
+	srv.portLock.Lock()
+	defer srv.portLock.Unlock()
+	var newport int
+portloop:
+	for newport = srv.portRangeStart; newport < srv.portRangeStart+100; newport++ {
+		for _, port := range srv.usedPorts {
+			if port == newport {
+				continue portloop
+			}
+			break
+		}
+	}
+	srv.usedPorts[name] = newport
+	log.Debug(newport, srv.portRangeStart)
+	return strconv.Itoa(newport)
 }

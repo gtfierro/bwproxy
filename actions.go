@@ -14,12 +14,13 @@ import (
 
 func doRegister(c *cli.Context) error {
 	cfg := &Config{
-		Port:          "2222",
-		ListenAddress: "127.0.0.1",
-		StaticPath:    "/home/gabe/src/bwproxy",
-		AppPath:       "/home/gabe/src/bwproxy/apps",
-		BOSSWAVEAgent: "",
-		UseIPv6:       false,
+		Port:           "2222",
+		ListenAddress:  "127.0.0.1",
+		StaticPath:     "/home/gabe/src/bwproxy",
+		AppPath:        "/home/gabe/src/bwproxy/apps",
+		PortRangeStart: 8000,
+		BOSSWAVEAgent:  "",
+		UseIPv6:        false,
 	}
 	if c.NArg() != 2 {
 		log.Fatal("Need to specify entity file and permissions JSON file")
@@ -74,12 +75,13 @@ func doRegister(c *cli.Context) error {
 
 func runProxy(c *cli.Context) error {
 	cfg := &Config{
-		Port:          "2222",
-		ListenAddress: "127.0.0.1",
-		StaticPath:    "/home/gabe/src/bwproxy",
-		AppPath:       "/home/gabe/src/bwproxy/apps",
-		BOSSWAVEAgent: "",
-		UseIPv6:       false,
+		Port:           "2222",
+		ListenAddress:  "127.0.0.1",
+		StaticPath:     "/home/gabe/src/bwproxy",
+		AppPath:        "/home/gabe/src/bwproxy/apps",
+		PortRangeStart: 8000,
+		BOSSWAVEAgent:  "",
+		UseIPv6:        false,
 	}
 	startProxyServer(cfg)
 	return nil

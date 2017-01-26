@@ -21,11 +21,13 @@ func init() {
 }
 
 type Config struct {
-	Port          string
-	ListenAddress string
-	StaticPath    string
-	UseIPv6       bool
-	BOSSWAVEAgent string
+	Port           string
+	ListenAddress  string
+	StaticPath     string
+	AppPath        string
+	PortRangeStart int
+	UseIPv6        bool
+	BOSSWAVEAgent  string
 }
 
 func main() {
