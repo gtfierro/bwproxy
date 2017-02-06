@@ -62,7 +62,7 @@ func startProxyServer(cfg *Config) {
 
 	// app browsing/managemenet
 	server.router.GET("/apps/list", server.listApps)
-	server.router.POST("/apps/start/:name", server.startApp)
+	server.router.GET("/apps/start/:name", server.startApp)
 
 	server.router.GET("/", server.phoneHome)
 	// TODO: think about how to "install" apps. Do we just place the source in a known folder?
@@ -263,6 +263,11 @@ func (srv *proxyServer) listApps(rw http.ResponseWriter, req *http.Request, ps h
 			rw.Write([]byte(err.Error()))
 			return
 		}
+		if app, found := srv.runningApps[manifest.Name]; found {
+			manifest.Address = srv.listenaddress + ":" + app.port
+		} else {
+			manifest.Address = srv.listenaddress + ":" + srv.port + "/apps/start/" + manifest.Name
+		}
 		manifests = append(manifests, manifest)
 	}
 
@@ -314,6 +319,9 @@ func (srv *proxyServer) startApp(rw http.ResponseWriter, req *http.Request, ps h
 	log.Noticef("%+v", cfg)
 	app := startAppServer(cfg)
 	srv.runningApps[appname] = app
+
+	// now redirect to the running app
+	http.Redirect(rw, req, "http://"+cfg.listenaddress+":"+cfg.port, http.StatusFound)
 	return
 }
 

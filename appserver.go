@@ -10,6 +10,7 @@ import (
 type appServer struct {
 	running bool
 
+	port string
 	// filesystem path where the app is located
 	root string
 	// permission key
@@ -33,11 +34,14 @@ type appManifest struct {
 	Name        string
 	Description string
 	Version     string
+	// not going to be populated by the manifest
+	Address string
 }
 
 func startAppServer(cfg *appConfig) *appServer {
 	app := &appServer{
 		running: false,
+		port:    cfg.port,
 		root:    cfg.root,
 		proxy:   cfg.proxy,
 	}

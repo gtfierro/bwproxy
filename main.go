@@ -43,7 +43,7 @@ func main() {
 			Action: doRegister,
 		},
 		{
-			Name:   "proxy",
+			Name:   "run",
 			Usage:  "Run the proxy",
 			Action: runProxy,
 		},
