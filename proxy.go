@@ -62,7 +62,7 @@ func startProxyServer(cfg *Config) {
 
 	// app browsing/managemenet
 	server.router.GET("/apps/list", server.listApps)
-	server.router.POST("/apps/start", server.startApp)
+	server.router.POST("/apps/start/:name", server.startApp)
 
 	server.router.GET("/", server.phoneHome)
 	// TODO: think about how to "install" apps. Do we just place the source in a known folder?
@@ -279,15 +279,7 @@ func (srv *proxyServer) listApps(rw http.ResponseWriter, req *http.Request, ps h
 func (srv *proxyServer) startApp(rw http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	defer req.Body.Close()
 
-	var appname string
-	err := json.NewDecoder(req.Body).Decode(&appname)
-	if err != nil {
-		err = errors.Wrap(err, "Could not decode appname")
-		log.Error(err)
-		rw.WriteHeader(500)
-		rw.Write([]byte(err.Error()))
-		return
-	}
+	appname := ps.ByName("name")
 	if appname == "" || badPathMatch.MatchString(appname) {
 		err := "Could not open app with invalid name " + appname
 		log.Error(err)
