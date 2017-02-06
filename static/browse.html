@@ -22,12 +22,26 @@
   <script>
     $.ready(function() {
         $.get("/apps/list")
-         .done(function(data) {
-            console.log(data);
+         .done(function(apps) {
+            apps = JSON.parse(apps);
+            console.log(apps);
+            html = "";
+            apps.forEach(function(manifest) {
+                html += '<li class="collection-item avatar">';
+                html += '<i class="material-icons circle">exit_to_app</i>';
+                html += '<a href="http://'+manifest.Address+'">';
+                html += '<span class="title">'+manifest.Name+'</span>';
+                html += '<p>'+manifest.Description+'</p>';
+                html += '</a>';
+                html += '</li>';
+                console.log(html);
+            });
+            $("#applist").html(html);
          })
-         .fail(functioN(err) {
+         .fail(function(err) {
+            console.log("fail",err);
          });
-    });
+    }());
   </script>
 </html>
 

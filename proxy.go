@@ -65,6 +65,7 @@ func startProxyServer(cfg *Config) {
 	server.router.GET("/apps/start/:name", server.startApp)
 
 	server.router.GET("/", server.phoneHome)
+	server.router.GET("/browse", server.browse)
 	// TODO: think about how to "install" apps. Do we just place the source in a known folder?
 	// TODO: need a way to "isolate" apps: chroot? https://github.com/adtac/fssb? Docker?
 	// TODO: need a way to prevent apps from calling "across" each other
@@ -241,6 +242,12 @@ func (srv *proxyServer) phoneHome(rw http.ResponseWriter, req *http.Request, ps 
 	http.ServeFile(rw, req, srv.staticpath+"/home.html")
 }
 
+func (srv *proxyServer) browse(rw http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	defer req.Body.Close()
+	http.ServeFile(rw, req, srv.staticpath+"/browse.html")
+}
+
+//TODO: if already started, attach the port number. If not, then render the app start
 func (srv *proxyServer) listApps(rw http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	defer req.Body.Close()
 
